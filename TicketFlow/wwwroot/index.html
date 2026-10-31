@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Support requests</title>
+    <style>
+        :root {
+            --bg: #eef2f5; --panel: #ffffff; --ink: #14202b; --muted: #5b6b7a;
+            --line: #d5dde4; --accent: #0f6b66; --accent-ink: #ffffff;
+            --low: #4a6b8a; --medium: #8a6a12; --high: #b45309; --urgent: #b42318;
+            --err-bg: #fdecea;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f171e; --panel: #172430; --ink: #e8eef3; --muted: #93a4b3;
+                --line: #2a3b4a; --accent: #3fb6ad; --accent-ink: #06201e;
+                --low: #8fb3d4; --medium: #e0b84a; --high: #f0a04b; --urgent: #ff8a80;
+                --err-bg: #3a1c1a;
+            }
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; }
+        body {
+            font-family: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: var(--bg); color: var(--ink); line-height: 1.5;
+            padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+        }
+        main { max-width: 980px; margin: 0 auto; padding: 40px 20px 64px; }
+        h1 { font-size: 1.9rem; letter-spacing: -0.02em; margin: 0 0 6px; }
+        .lede { color: var(--muted); margin: 0 0 32px; max-width: 52ch; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+        @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+        section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 24px; }
+        h2 { font-size: 1.1rem; margin: 0 0 16px; }
+        label { display: block; font-weight: 600; font-size: .9rem; margin: 14px 0 6px; }
+        input, textarea {
+            width: 100%; font: inherit; color: inherit; background: transparent;
+            border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px;
+        }
+        textarea { min-height: 120px; resize: vertical; }
+        input:focus-visible, textarea:focus-visible, button:focus-visible {
+            outline: 2px solid var(--accent); outline-offset: 2px;
+        }
+        button {
+            font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px;
+            border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+            padding: 10px 16px; margin-top: 18px;
+        }
+        button.secondary { background: transparent; color: var(--accent); margin-top: 0; }
+        button:disabled { opacity: .55; cursor: not-allowed; }
+        .row { display: flex; gap: 8px; }
+        .row input { flex: 1; }
+        .error { background: var(--err-bg); border-radius: 6px; padding: 10px 12px; margin-top: 14px; color: var(--ink); }
+        .hint { color: var(--muted); font-size: .9rem; margin: 0; }
+        .ticket-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+        .ticket-head h3 { margin: 0; font-size: 1.05rem; }
+        .id { color: var(--muted); font-size: .9rem; white-space: nowrap; }
+        .steps { list-style: none; padding: 0; margin: 16px 0; border-left: 2px solid var(--line); }
+        .steps li { padding: 0 0 12px 16px; position: relative; color: var(--muted); }
+        .steps li::before {
+            content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px;
+            border-radius: 50%; background: var(--panel); border: 2px solid var(--line);
+        }
+        .steps li.done { color: var(--ink); }
+        .steps li.done::before { background: var(--accent); border-color: var(--accent); }
+        .steps li.active::before { border-color: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
+        @keyframes pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent); } }
+        @media (prefers-reduced-motion: reduce) { .steps li.active::before { animation: none; } }
+        dl { margin: 0; display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; }
+        dt { color: var(--muted); }
+        dd { margin: 0; }
+        .badge { display: inline-block; font-weight: 700; font-size: .85rem; padding: 2px 10px; border-radius: 999px; border: 1.5px solid currentColor; }
+        .Low { color: var(--low); } .Medium { color: var(--medium); }
+        .High { color: var(--high); } .Urgent { color: var(--urgent); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Support requests</h1>
+    <p class="lede">Tell us what went wrong. We sort every request automatically, and you can follow its progress here.</p>
+
+    <div class="grid">
+        <section aria-labelledby="new-h">
+            <h2 id="new-h">Send a request</h2>
+            <form id="create-form" novalidate>
+                <label for="title">Title</label>
+                <input id="title" maxlength="200" required placeholder="What is the problem?">
+                <label for="description">Details</label>
+                <textarea id="description" maxlength="4000" required placeholder="Describe what happened and what you expected."></textarea>
+                <label for="email">Your email</label>
+                <input id="email" type="email" maxlength="320" required placeholder="name@example.com">
+                <div id="create-error" class="error hidden" role="alert"></div>
+                <button id="create-btn" type="submit">Send request</button>
+            </form>
+        </section>
+
+        <section aria-labelledby="track-h">
+            <h2 id="track-h">Check a request</h2>
+            <form id="lookup-form" class="row">
+                <input id="lookup-id" inputmode="numeric" pattern="[0-9]*" placeholder="Request number" aria-label="Request number">
+                <button class="secondary" type="submit">Check status</button>
+            </form>
+            <div id="lookup-error" class="error hidden" role="alert"></div>
+            <p id="empty" class="hint" style="margin-top:16px">Send a request or enter a request number to see its status.</p>
+
+            <div id="result" class="hidden" aria-live="polite">
+                <div class="ticket-head" style="margin-top:20px">
+                    <h3 id="r-title"></h3><span class="id" id="r-id"></span>
+                </div>
+                <ul class="steps">
+                    <li id="s-received">Received</li>
+                    <li id="s-triaged">Sorted by priority</li>
+                </ul>
+                <dl id="r-details" class="hidden">
+                    <dt>Category</dt><dd id="r-category"></dd>
+                    <dt>Priority</dt><dd><span id="r-priority" class="badge"></span></dd>
+                    <dt>Summary</dt><dd id="r-summary"></dd>
+                </dl>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+<script>
+    // Change this if your controller route differs (e.g. "/api/tickets")
+    const API = "/api/ticket";
+    let currentId = null;
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/tickets").withAutomaticReconnect().build();
+
+    // The API pushes this when n8n has triaged the ticket
+    connection.on("TicketTriaged", async (payload) => {
+        const id = payload.Id;
+        if (id !== currentId) return;
+        try {
+            render(await fetchTicket(id));
+        } catch (e) {
+            showError("lookup-error", e.message);
+        }
+    });
+    // Groups are lost on reconnect, so subscribe again and refresh the state
+    connection.onreconnected(() => { if (currentId) track(currentId); });
+
+    const $ = (id) => document.getElementById(id);
+    const show = (el, on) => el.classList.toggle("hidden", !on);
+
+    function showError(id, msg) { const el = $(id); el.textContent = msg; show(el, !!msg); }
+
+    async function readError(res) {
+        try {
+            const data = await res.json();
+            if (data.errors) return Object.values(data.errors).flat().join(" ");
+            if (data.title) return data.title;
+        } catch {}
+        try {
+            const t = await res.text();
+            if (t) return t;
+        } catch {}
+        return "Something went wrong (status " + res.status + ").";
+    }
+
+    function render(t) {
+        show($("empty"), false); show($("result"), true);
+        $("r-title").textContent = t.title;
+        $("r-id").textContent = "Request #" + t.id;
+        const triaged = t.status === "Triaged";
+        $("s-received").className = "done";
+        $("s-triaged").className = triaged ? "done" : "active";
+        $("s-triaged").textContent = triaged ? "Sorted by priority" : "Sorting your request…";
+        show($("r-details"), triaged);
+        if (triaged) {
+            $("r-category").textContent = t.category;
+            const p = $("r-priority");
+            p.textContent = t.priority; p.className = "badge " + t.priority;
+            $("r-summary").textContent = t.summary || "";
+        }
+        return triaged;
+    }
+
+    async function fetchTicket(id) {
+        const res = await fetch(API + "/" + encodeURIComponent(id));
+        if (res.status === 404) throw new Error("No request found with number " + id + ".");
+        if (!res.ok) throw new Error(await readError(res));
+        return res.json();
+    }
+
+    async function subscribe(id) {
+        if (connection.state === signalR.HubConnectionState.Disconnected) await connection.start();
+        if (currentId && currentId !== id) await connection.invoke("Unsubscribe", currentId);
+        currentId = id;
+        await connection.invoke("Subscribe", id);
+    }
+
+    async function track(id) {
+        showError("lookup-error", "");
+        id = Number(id);
+        let live = true;
+        // Subscribe first, then fetch, so a result that arrives in between is not missed
+        try { await subscribe(id); } catch { live = false; currentId = id; }
+        try {
+            const t = await fetchTicket(id);
+            $("lookup-id").value = t.id;
+            const done = render(t);
+            if (!done && !live) $("s-triaged").textContent = "Still sorting. Live updates are offline, so check again shortly.";
+        } catch (e) {
+            show($("result"), false); show($("empty"), true);
+            showError("lookup-error", e.message);
+        }
+    }
+
+    $("create-form").addEventListener("submit", async (e) => {
+        e.preventDefault(); showError("create-error", "");
+        const body = {
+            title: $("title").value.trim(),
+            description: $("description").value.trim(),
+            customerEmail: $("email").value.trim()
+        };
+        if (!body.title || !body.description || !body.customerEmail) {
+            return showError("create-error", "Fill in the title, details, and your email.");
+        }
+        const btn = $("create-btn"); btn.disabled = true; btn.textContent = "Sending…";
+        try {
+            const res = await fetch(`${API}/create`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error(await readError(res));
+            const t = await res.json();
+            $("create-form").reset();
+            track(t.id);
+        } catch (err) {
+            showError("create-error", err.message);
+        } finally {
+            btn.disabled = false; btn.textContent = "Send request";
+        }
+    });
+
+    $("lookup-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const id = $("lookup-id").value.trim();
+        if (!/^\d+$/.test(id)) return showError("lookup-error", "Enter the request number, digits only.");
+        track(id);
+    });
+</script>
+</body>
+</html>
