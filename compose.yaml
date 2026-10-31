@@ -40,6 +40,8 @@ services:
       - N8n__TicketCreatedPath=webhook/ticket-created
     ports:
       - "8080:8080"
+    volumes:
+      - ./TicketFlow/wwwroot:/app/wwwroot
 
 volumes:
   n8n_data:

@@ -129,12 +129,29 @@
     const API = "/api/ticket";
     let currentId = null;
     const connection = new signalR.HubConnectionBuilder()
-        .withUrl("/hubs/tickets").withAutomaticReconnect().build();
+        .withUrl("/hubs/tickets")
+        .withAutomaticReconnect()
+        .build();
+
+    // Start SignalR connection immediately on page load
+    async function startConnection() {
+        if (connection.state === signalR.HubConnectionState.Disconnected) {
+            try {
+                await connection.start();
+                console.log("SignalR connected.");
+            } catch (err) {
+                console.warn("SignalR connection attempt failed, will retry:", err);
+                setTimeout(startConnection, 3000);
+            }
+        }
+    }
+    startConnection();
 
     // The API pushes this when n8n has triaged the ticket
     connection.on("TicketTriaged", async (payload) => {
-        const id = payload.Id;
-        if (id !== currentId) return;
+        // Backend passes ticket.Id directly (number) or object
+        const id = typeof payload === "object" && payload !== null ? (payload.id ?? payload.Id) : payload;
+        if (Number(id) !== Number(currentId)) return;
         try {
             render(await fetchTicket(id));
         } catch (e) {
@@ -187,9 +204,26 @@
         return res.json();
     }
 
+    async function ensureConnected() {
+        if (connection.state === signalR.HubConnectionState.Connected) return;
+        if (connection.state === signalR.HubConnectionState.Disconnected) {
+            await connection.start();
+            return;
+        }
+        // Wait if in Connecting or Reconnecting state
+        let attempts = 0;
+        while (connection.state !== signalR.HubConnectionState.Connected && attempts < 30) {
+            await new Promise(r => setTimeout(r, 100));
+            attempts++;
+        }
+    }
+
     async function subscribe(id) {
-        if (connection.state === signalR.HubConnectionState.Disconnected) await connection.start();
-        if (currentId && currentId !== id) await connection.invoke("Unsubscribe", currentId);
+        id = Number(id);
+        await ensureConnected();
+        if (currentId && currentId !== id) {
+            try { await connection.invoke("Unsubscribe", currentId); } catch {}
+        }
         currentId = id;
         await connection.invoke("Subscribe", id);
     }
